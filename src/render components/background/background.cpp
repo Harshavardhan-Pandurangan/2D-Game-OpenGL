@@ -14,13 +14,13 @@
 unsigned int background_shader;
 unsigned int background_texture;
 unsigned int background_VAO;
-float offset = 0.0f;
-float prev_time = 0.0f;
+float offset_background = 0.0f;
+float prev_time_background = 0.0f;
 
 void initBackground(){
 
-    createShader("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/vertexshader.txt",
-    "/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/fragmentshader.txt",
+    createShader("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/vertex.shader",
+    "/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/fragment.shader",
     &background_shader);
 
     float vertices[] = {
@@ -82,7 +82,7 @@ void initBackground(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     int width, height, nrChannels;
@@ -92,24 +92,27 @@ void initBackground(){
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);
+
 }
 
 void renderBackground(){
+
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, background_texture);
     glUseProgram(background_shader);
 
-    if(offset > -0.67f){
-        float curr_time = (float)glfwGetTime() * 0.5f / 0.9f;
-        offset = offset + prev_time - curr_time;
-        prev_time = curr_time;
+    if(offset_background > -0.67f){
+        float curr_time_background = (float)glfwGetTime() * 0.5f / 0.9f;
+        offset_background = offset_background + prev_time_background - curr_time_background;
+        prev_time_background = curr_time_background;
     }else{
-        offset = 0.0f;
-        prev_time = 0.0f;
+        offset_background = 0.0f;
+        prev_time_background = 0.0f;
         glfwSetTime(0.0f);
     }
 
     glm::mat4 translate = glm::mat4(1.0f);
-    translate = glm::translate(translate, glm::vec3(offset, 0.0f, 0.0f));
+    translate = glm::translate(translate, glm::vec3(offset_background, 0.0f, 0.0f));
 
     unsigned int translateLoc = glGetUniformLocation(background_shader, "translate");
     glUniformMatrix4fv(translateLoc, 1, GL_FALSE, glm::value_ptr(translate));
@@ -118,10 +121,13 @@ void renderBackground(){
 
     glBindVertexArray(background_VAO);
     glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_INT, 0);
+
 }
 
 void deleteBackground(){
+
     glDeleteVertexArrays(1, &background_VAO);
     glDeleteProgram(background_shader);
     glDeleteTextures(1, &background_texture);
+
 }

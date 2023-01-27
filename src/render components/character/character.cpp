@@ -3,8 +3,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <iostream>
+
 #include "./../../shaders/shaders.hpp"
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -15,13 +15,23 @@
 unsigned int character_shader;
 unsigned int character_texture;
 unsigned int character_VAO;
+float character_vertices[8] = {
+    -0.77f,  -0.58f,
+    -0.77f, -0.88f,
+    -0.88f, -0.88f,
+    -0.88f,  -0.58f
+};
 float curr_elevation = 0.0f;
-float gravity = 0.015f;
+float curr_velocity = 0.0f;
+float acceleration = 0.0008f;
+float gravity = 0.0004f;
 int step_tracker = 0;
+short image_control = 0;
 
 void initCharacter(){
-    createShader("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/vertexshader.txt",
-    "/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/fragmentshader.txt",
+
+    createShader("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/vertex.shader",
+    "/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/shaders/fragment.shader",
     &character_shader);
 
     float vertices[] = {
@@ -57,6 +67,7 @@ void initCharacter(){
 
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
 }
 
 void renderCharacter(GLFWwindow *window){
@@ -65,20 +76,47 @@ void renderCharacter(GLFWwindow *window){
 
     glUseProgram(character_shader);
 
-    if(press == 1){
-        if(curr_elevation < 1.3f)
-            curr_elevation += 0.01f;
-        gravity = 0.01f;
-        step_tracker = 0;
-    }
-    else if(curr_elevation > 0.0f){
-        gravity += 0.0003f;
-        (curr_elevation > gravity) ? curr_elevation -= gravity : curr_elevation = 0.0f;
-        step_tracker = 0;
+    if(curr_elevation == 0.0f){
+        step_tracker = (step_tracker + 1) % 60;
+        if(press == 1){
+            curr_elevation = 0.001f;
+            curr_velocity = 0.001f;
+        }
+    }else if(curr_elevation < 0.0f){
+        if(press == 1){
+            curr_velocity += acceleration - gravity;
+            if(curr_velocity > 0.03f){
+                curr_velocity = 0.03f;
+            }
+            curr_elevation = 0.0f;
+        }else if(curr_velocity < 0.0f){
+            curr_velocity = 0.0f;
+            curr_elevation = 0.0f;
+        }else{
+            step_tracker = (step_tracker + 1) % 68;
+            curr_elevation = 0.0f;
+        }
     }else{
-        step_tracker = (step_tracker + 1) % 80;
+        if(press == 1){
+            curr_velocity += acceleration - gravity;
+            if(curr_velocity > 0.03f){
+                curr_velocity = 0.03f;
+            }
+        }else{
+            curr_velocity -= gravity;
+            if(curr_velocity < -0.03f){
+                curr_velocity = -0.03f;
+            }
+        }
+        curr_elevation += curr_velocity;
+        if(curr_elevation >= 1.5f){
+            curr_velocity = 0.0f;
+            curr_elevation = 1.5f;
+        }
+        gravity = 0.0004f;
     }
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, character_texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -92,15 +130,15 @@ void renderCharacter(GLFWwindow *window){
     unsigned char *data;
 
     if(curr_elevation > 0.0f){
-        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/Char flying.png", &width, &height, &nrChannels, 0);
-    }else if(step_tracker < 20){
-        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/Char step 1.png", &width, &height, &nrChannels, 0);
-    }else if(step_tracker < 40){
-        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/Char step 2.png", &width, &height, &nrChannels, 0);
-    }else if(step_tracker < 60){
-        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/Char step 3.png", &width, &height, &nrChannels, 0);
-    }else if(step_tracker < 80){
-        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/Char step 4.png", &width, &height, &nrChannels, 0);
+        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/FinalFly.png", &width, &height, &nrChannels, 0);
+    }else if(step_tracker < 17){
+        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/PicFinal1.png", &width, &height, &nrChannels, 0);
+    }else if(step_tracker < 34){
+        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/PicFinal2.png", &width, &height, &nrChannels, 0);
+    }else if(step_tracker < 51){
+        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/PicFinal3.png", &width, &height, &nrChannels, 0);
+    }else if(step_tracker < 68){
+        data = stbi_load("/Users/harshavardhan/Documents/CG/Assignment 1/2D Game/src/render components/character/PicFinal4.png", &width, &height, &nrChannels, 0);
     }
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -111,15 +149,23 @@ void renderCharacter(GLFWwindow *window){
     glm::mat4 translate = glm::mat4(1.0f);
     translate = glm::translate(translate, glm::vec3(0.0f, curr_elevation, 0.0f));
 
+    character_vertices[1] = -0.58f + curr_elevation;
+    character_vertices[3] = -0.88f + curr_elevation;
+    character_vertices[5] = -0.88f + curr_elevation;
+    character_vertices[7] = -0.58f + curr_elevation;
+
     unsigned int translateLoc = glGetUniformLocation(character_shader, "translate");
     glUniformMatrix4fv(translateLoc, 1, GL_FALSE, glm::value_ptr(translate));
 
     glBindVertexArray(character_VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 }
 
 void deleteCharacter(){
+
     glDeleteVertexArrays(1, &character_VAO);
     glDeleteProgram(character_shader);
     glDeleteTextures(1, &character_texture);
+
 }
